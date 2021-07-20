@@ -81,6 +81,10 @@ class App {
     return this.relativeRename(this.electronBinaryDir, this.originalElectronName, this.newElectronName)
   }
 
+  inputPath (filePath) {
+    return path.resolve(this.opts.dir, filePath)
+  }
+
   /**
    * Performs the following initial operations for an app:
    * * Creates temporary directory
@@ -145,7 +149,7 @@ class App {
   async normalizeIconExtension (targetExt) {
     if (!this.opts.icon) throw new Error('No filename specified to normalizeIconExtension')
 
-    let iconFilename = this.opts.icon
+    let iconFilename = this.inputPath(this.opts.icon)
     const ext = path.extname(iconFilename)
     if (ext !== targetExt) {
       iconFilename = path.join(path.dirname(iconFilename), path.basename(iconFilename, ext) + targetExt)
@@ -207,7 +211,7 @@ class App {
     const extraResources = common.ensureArray(this.opts.extraResource)
 
     await Promise.all(extraResources.map(
-      resource => fs.copy(resource, path.resolve(this.stagingPath, this.resourcesDir, path.basename(resource)))
+      resource => fs.copy(this.inputPath(resource), path.resolve(this.stagingPath, this.resourcesDir, path.basename(resource)))
     ))
   }
 

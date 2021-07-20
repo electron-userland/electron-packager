@@ -138,7 +138,7 @@ class MacApp extends App {
     }
 
     if (typeof propsOrFilename === 'string') {
-      const plist = await this.loadPlist(propsOrFilename)
+      const plist = await this.loadPlist(this.inputPath(propsOrFilename))
       return Object.assign(this.appPlist, plist)
     } else {
       return Object.assign(this.appPlist, propsOrFilename)

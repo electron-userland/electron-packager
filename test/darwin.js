@@ -226,6 +226,13 @@ if (!(process.env.CI && process.platform === 'win32')) {
     return t.is(hash.digest('hex'), expectedChecksum, 'Icon should not have been overwritten')
   }))
 
+  const iconRelBase = path.join('..', 'monochrome')
+  const icnsRelPath = `${iconRelBase}.icns`
+
+  test.serial('macOS icon (relative path): .icns specified', darwinTest(iconTest, icnsRelPath, icnsPath))
+  test.serial('macOS icon (relative path): .ico specified (should replace with .icns)', darwinTest(iconTest, `${iconRelBase}.ico`, icnsPath))
+  test.serial('macOS icon (relative path): basename only (should add .icns)', darwinTest(iconTest, iconRelBase, icnsPath))
+
   const extraInfoPath = path.join(__dirname, 'fixtures', 'extrainfo.plist')
   const extraInfoParams = plist.parse(fs.readFileSync(extraInfoPath).toString())
 
@@ -237,6 +244,10 @@ if (!(process.env.CI && process.platform === 'win32')) {
     const obj = await packageAndParseInfoPlist(t, opts)
     t.false(obj.NSRequiresAquaSystemAppearance, 'NSRequiresAquaSystemAppearance should be set to false')
   }))
+
+  const extraInfoRelPath = path.join('..', 'extrainfo.plist')
+
+  test.serial('extendInfo (relative path): filename', darwinTest(extendInfoTest, extraInfoRelPath))
 
   test.serial('protocol/protocol-name', darwinTest(async (t, opts) => {
     opts.protocols = [

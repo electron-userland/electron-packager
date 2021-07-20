@@ -198,44 +198,50 @@ test.serial('deref symlink', util.testSinglePlatform(async (t, opts) => {
   await fs.remove(dest)
 }))
 
-async function createExtraResourceStringTest (t, opts, platform) {
+async function createExtraResourceStringTest (t, opts, platform, relative) {
   const extra1Base = 'data1.txt'
-  const extra1Path = path.join(__dirname, 'fixtures', extra1Base)
+  const extra1AbsPath = path.join(__dirname, 'fixtures', extra1Base)
+  const extra1RelPath = path.join('..', extra1Base)
 
-  opts.name = 'extraResourceStringTest'
+  opts.name = 'extraResourceStringTest' + (relative ? '-relative' : '')
   opts.dir = util.fixtureSubdir('basic')
   opts.out = 'dist'
   opts.platform = platform
-  opts.extraResource = extra1Path
+  opts.extraResource = relative ? extra1RelPath : extra1AbsPath
 
   const resourcesPath = await util.packageAndEnsureResourcesPath(t, opts)
-  await util.assertFilesEqual(t, extra1Path, path.join(resourcesPath, extra1Base), 'resource file data1.txt should match')
+  await util.assertFilesEqual(t, extra1AbsPath, path.join(resourcesPath, extra1Base), 'resource file data1.txt should match')
 }
 
-async function createExtraResourceArrayTest (t, opts, platform) {
+async function createExtraResourceArrayTest (t, opts, platform, relative) {
   const extra1Base = 'data1.txt'
-  const extra1Path = path.join(__dirname, 'fixtures', extra1Base)
+  const extra1AbsPath = path.join(__dirname, 'fixtures', extra1Base)
+  const extra1RelPath = path.join('..', extra1Base)
   const extra2Base = 'extrainfo.plist'
-  const extra2Path = path.join(__dirname, 'fixtures', extra2Base)
+  const extra2AbsPath = path.join(__dirname, 'fixtures', extra2Base)
+  const extra2RelPath = path.join('..', extra2Base)
 
-  opts.name = 'extraResourceArrayTest'
+  opts.name = 'extraResourceArrayTest' + (relative ? '-relative' : '')
   opts.dir = util.fixtureSubdir('basic')
   opts.out = 'dist'
   opts.platform = platform
-  opts.extraResource = [extra1Path, extra2Path]
+  opts.extraResource = relative ? [extra1RelPath, extra2RelPath] : [extra1AbsPath, extra2AbsPath]
 
   const resourcesPath = await util.packageAndEnsureResourcesPath(t, opts)
   const extra1DistPath = path.join(resourcesPath, extra1Base)
   const extra2DistPath = path.join(resourcesPath, extra2Base)
   await util.assertPathExists(t, extra1DistPath, 'resource file data1.txt exists')
-  await util.assertFilesEqual(t, extra1Path, extra1DistPath, 'resource file data1.txt should match')
+  await util.assertFilesEqual(t, extra1AbsPath, extra1DistPath, 'resource file data1.txt should match')
   await util.assertPathExists(t, extra2DistPath, 'resource file extrainfo.plist exists')
-  await util.assertFilesEqual(t, extra2Path, extra2DistPath, 'resource file extrainfo.plist should match')
+  await util.assertFilesEqual(t, extra2AbsPath, extra2DistPath, 'resource file extrainfo.plist should match')
 }
 
 for (const platform of ['darwin', 'linux']) {
   test.serial(`extraResource: string (${platform})`, util.testSinglePlatform(createExtraResourceStringTest, platform))
   test.serial(`extraResource: array (${platform})`, util.testSinglePlatform(createExtraResourceArrayTest, platform))
+  const relativePaths = true
+  test.serial(`extraResource (relative): string (${platform})`, util.testSinglePlatform(createExtraResourceStringTest, platform, relativePaths))
+  test.serial(`extraResource (relative): array (${platform})`, util.testSinglePlatform(createExtraResourceArrayTest, platform, relativePaths))
 }
 
 test.serial('building for Linux target sanitizes binary name', util.testSinglePlatform(async (t, opts) => {
