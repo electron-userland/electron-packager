@@ -334,6 +334,19 @@ declare namespace electronPackager {
      */
     extendInfo?: string | { [property: string]: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
     /**
+     * When the value is a string, specifies the filename of a `plist` file. Its contents are merged
+     * into all the Helper app's `Info.plist` files.
+     * When the value is an `Object`, it specifies an already-parsed `plist` data structure that is
+     * merged into all the Helper app's `Info.plist` files.
+     *
+     * Entries from `extendHelperInfo` override entries in the helpers apps `Info.plist` file supplied by
+     * `electron`, `electron-prebuilt-compile`, or `electron-prebuilt`, but are overridden by other
+     * options such as [[appVersion]] or [[appBundleId]].
+     *
+     * @category macOS
+     */
+    extendHelperInfo?: string | { [property: string]: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+    /**
      * One or more files to be copied directly into the app's `Contents/Resources` directory for
      * macOS target platforms, and the `resources` directory for other target platforms. The
      * resources directory can be referenced in the packaged app via the

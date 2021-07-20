@@ -43,9 +43,18 @@ async function parseInfoPlist (t, opts, basePath) {
   return util.parsePlist(t, path.join(basePath, `${opts.name}.app`))
 }
 
+async function parseHelperInfoPlist (t, opts, basePath) {
+  return util.parsePlist(t, path.join(basePath, `${opts.name}.app`, 'Contents', 'Frameworks', `${opts.name} Helper.app`))
+}
+
 async function packageAndParseInfoPlist (t, opts) {
   const finalPath = (await packager(opts))[0]
   return parseInfoPlist(t, opts, finalPath)
+}
+
+async function packageAndParseHelperInfoPlist (t, opts) {
+  const finalPath = (await packager(opts))[0]
+  return parseHelperInfoPlist(t, opts, finalPath)
 }
 
 function assertPlistStringValue (t, obj, property, value, message) {
@@ -106,6 +115,26 @@ async function extendInfoTest (t, baseOpts, extraPathOrParams) {
   assertPlistStringValue(t, obj, 'CFBundleVersion', opts.buildVersion, 'CFBundleVersion should reflect buildVersion argument')
   assertCFBundleIdentifierValue(t, obj, 'com.electron.extratest', 'CFBundleIdentifier should reflect appBundleId argument')
   assertPlistStringValue(t, obj, 'LSApplicationCategoryType', 'public.app-category.music', 'LSApplicationCategoryType should reflect appCategoryType argument')
+  assertPlistStringValue(t, obj, 'CFBundlePackageType', 'APPL', 'CFBundlePackageType should be Electron default')
+}
+
+async function extendHelperInfoTest (t, baseOpts, extraPathOrParams) {
+  const opts = {
+    ...baseOpts,
+    appBundleId: 'com.electron.extratest',
+    buildVersion: '3.2.1',
+    extendHelperInfo: extraPathOrParams,
+    electronVersion: '6.0.0'
+  }
+
+  const obj = await packageAndParseHelperInfoPlist(t, opts)
+  assertPlistStringValue(t, obj, 'TestKeyString', 'String data', 'TestKeyString should come from extendHelperInfo')
+  t.is(obj.TestKeyInt, 12345, 'TestKeyInt should come from extendHelperInfo')
+  t.is(obj.TestKeyBool, true, 'TestKeyBool should come from extendHelperInfo')
+  t.deepEqual(obj.TestKeyArray, ['public.content', 'public.data'], 'TestKeyArray should come from extendHelperInfo')
+  t.deepEqual(obj.TestKeyDict, { Number: 98765, CFBundleVersion: '0.0.0' }, 'TestKeyDict should come from extendHelperInfo')
+  assertPlistStringValue(t, obj, 'CFBundleVersion', opts.buildVersion, 'CFBundleVersion should reflect buildVersion argument')
+  assertCFBundleIdentifierValue(t, obj, 'com.electron.extratest.helper', 'CFBundleIdentifier should reflect appBundleId argument')
   assertPlistStringValue(t, obj, 'CFBundlePackageType', 'APPL', 'CFBundlePackageType should be Electron default')
 }
 
@@ -231,6 +260,13 @@ if (!(process.env.CI && process.platform === 'win32')) {
 
   test.serial('extendInfo: filename', darwinTest(extendInfoTest, extraInfoPath))
   test.serial('extendInfo: params', darwinTest(extendInfoTest, extraInfoParams))
+
+  const extraHelperInfoPath = path.join(__dirname, 'fixtures', 'extrainfo.plist')
+  const extraHelperInfoParams = plist.parse(fs.readFileSync(extraHelperInfoPath).toString())
+
+  test.serial('extendHelperInfo: filename', darwinTest(extendHelperInfoTest, extraHelperInfoPath))
+  test.serial('extendHelperInfo: params', darwinTest(extendHelperInfoTest, extraHelperInfoParams))
+
   test.serial('darwinDarkModeSupport: should enable dark mode in macOS Mojave', darwinTest(async (t, opts) => {
     opts.darwinDarkModeSupport = true
 

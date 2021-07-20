@@ -132,16 +132,16 @@ class MacApp extends App {
     return this.updatePlist(base, `${this.appName} ${helperSuffix}`, identifier, name)
   }
 
-  async extendAppPlist (propsOrFilename) {
+  async extendPlist (base, propsOrFilename) {
     if (!propsOrFilename) {
       return Promise.resolve()
     }
 
     if (typeof propsOrFilename === 'string') {
       const plist = await this.loadPlist(propsOrFilename)
-      return Object.assign(this.appPlist, plist)
+      return Object.assign(base, plist)
     } else {
-      return Object.assign(this.appPlist, propsOrFilename)
+      return Object.assign(base, propsOrFilename)
     }
   }
 
@@ -189,9 +189,9 @@ class MacApp extends App {
 
     const plists = await this.determinePlistFilesToUpdate()
     await Promise.all(plists.map(plistArgs => this.loadPlist(...plistArgs)))
-    await this.extendAppPlist(this.opts.extendInfo)
+    await this.extendPlist(this.appPlist, this.opts.extendInfo)
     this.appPlist = this.updatePlist(this.appPlist, this.executableName, appBundleIdentifier, this.appName)
-    this.helperPlist = this.updateHelperPlist(this.helperPlist)
+
     const updateIfExists = [
       ['helperRendererPlist', '(Renderer)', true],
       ['helperPluginPlist', '(Plugin)', true],
@@ -199,10 +199,20 @@ class MacApp extends App {
       ['helperEHPlist', 'EH'],
       ['helperNPPlist', 'NP']
     ]
+
+    for (const [plistKey] of [...updateIfExists, ['helperPlist']]) {
+      if (!this[plistKey]) continue
+      await this.extendPlist(this[plistKey], this.opts.extendHelperInfo)
+    }
+
+    this.helperPlist = this.updateHelperPlist(this.helperPlist)
     for (const [plistKey, ...suffixArgs] of updateIfExists) {
       if (!this[plistKey]) continue
       this[plistKey] = this.updateHelperPlist(this[plistKey], ...suffixArgs)
     }
+
+    // Some properties need to go on all helpers as well, version, usage info, etc.
+    const plistsToUpdate = updateIfExists.filter(([key]) => !!this[key]).map(([key]) => key).concat(['appPlist', 'helperPlist'])
 
     if (this.loginHelperPlist) {
       const loginHelperName = common.sanitizeAppName(`${this.appName} Login Helper`)
@@ -212,11 +222,15 @@ class MacApp extends App {
     }
 
     if (this.appVersion) {
-      this.appPlist.CFBundleShortVersionString = this.appPlist.CFBundleVersion = '' + this.appVersion
+      for (const plistKey of plistsToUpdate) {
+        this[plistKey].CFBundleShortVersionString = this[plistKey].CFBundleVersion = '' + this.appVersion
+      }
     }
 
     if (this.buildVersion) {
-      this.appPlist.CFBundleVersion = '' + this.buildVersion
+      for (const plistKey of plistsToUpdate) {
+        this[plistKey].CFBundleVersion = '' + this.buildVersion
+      }
     }
 
     if (this.opts.protocols && this.opts.protocols.length) {
@@ -237,6 +251,9 @@ class MacApp extends App {
 
     if (this.usageDescription) {
       for (const [type, description] of Object.entries(this.usageDescription)) {
+        for (const plistKey of plistsToUpdate) {
+          this[plistKey][`NS${type}UsageDescription`] = description
+        }
         this.appPlist[`NS${type}UsageDescription`] = description
       }
     }

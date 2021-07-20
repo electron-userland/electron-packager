@@ -14,6 +14,10 @@
 * Support for customizing Windows targets on darwin/arm64 (#1260)
 * Support for customizing Windows targets on WSL without Wine installed (#1260)
 
+### Added
+
+* Add `extendHelperInfo` option to allow extend helper app `Info.plist` files
+
 ## [15.2.0] - 2020-12-04
 
 [15.2.0]: https://github.com/electron/electron-packager/compare/v15.1.0...v15.2.0
